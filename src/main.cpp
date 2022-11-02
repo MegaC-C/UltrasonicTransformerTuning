@@ -28,7 +28,7 @@
      } 
  } 
 
- static void IRAM_ATTR triggerFlag (){
+ void IRAM_ATTR triggerFlag (){
     stopRingingTime = micros();
 }            
   

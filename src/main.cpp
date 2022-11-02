@@ -13,7 +13,7 @@
  uint32_t ticks = xthal_get_ccount();
  uint32_t ticksDelay = 3000;
  uint32_t startRingingTime = 0;         // in µs 
- uint32_t stopRingingTime = 0;          // in µs 
+ volatile uint32_t stopRingingTime = 0; // in µs 
  uint32_t ringingTime = 0;              // in µs 
  uint32_t lowestRingingTime = 1000000;  // in µs 
  uint32_t timeMeasured = 0;             // in ms 
@@ -26,7 +26,11 @@
      while(xthal_get_ccount() - ticks < n){ 
          // do nothing, just chill 
      } 
- }             
+ } 
+
+ static void IRAM_ATTR triggerFlag (){
+    stopRingingTime = micros();
+}            
   
  //--------------------------------------------------------- 
  void setup() 
@@ -78,12 +82,12 @@
   
      // measure all ringing ECHO signals during timeToMeasure and take the last ECHO signal to calculate ringingTime  
      timeMeasured = millis(); 
-     startRingingTime = micros();     
+     startRingingTime = micros();
+     attachInterrupt(digitalPinToInterrupt(ECHO_PIN), triggerFlag, FALLING);      
      while(millis() - timeMeasured < timeToMeasure){ 
-         if(!digitalRead(ECHO_PIN)){ 
-             stopRingingTime = micros(); 
-         } 
-     }      
+        // do nothing for timeToMeasure, only ISR actions
+     } 
+     detachInterrupt(digitalPinToInterrupt(ECHO_PIN));     
      ringingTime = stopRingingTime - startRingingTime; 
      if(ringingTime < lowestRingingTime){ 
          lowestRingingTime = ringingTime; 
@@ -93,5 +97,7 @@
      Serial.println(" µs lowest ringing time"); 
      Serial.print(ringingTime); 
      Serial.println(" µs current ringing time"); 
+     Serial.print(ringingTime/58); 
+     Serial.println(" cm roughly current distance"); 
      Serial.println();
     }
